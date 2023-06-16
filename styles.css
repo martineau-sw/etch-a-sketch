@@ -1,0 +1,12 @@
+.rows {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cell {
+    width: 2vw;
+    height: 2vw;
+    background-color: grey
+;
+}
