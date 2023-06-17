@@ -7,6 +7,7 @@ let appliedColor;
 let previousColor = defaultColor;
 let clicked = false;
 let drag = false;
+let drawMode = 0;
 
 
 const dragStart = () => {
@@ -67,10 +68,13 @@ function hexToRGB(hexString) {
 function colorCell(canvasColor) {
     let selected = rgbToComponent(selectedColor);
 
+    if(drawMode == 2) return replaceColor(`rgb(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}`)
+    if(drawMode == 1) return replaceColor(`rgba(255, 255, 255, 1)`);
+
     if(selected[3] < 1) {
         return mixColor(canvasColor);
     }
-    return replaceColor(canvasColor);
+    return replaceColor(selectedColor);
 }
 
 function mixColor(canvasColor) {
@@ -83,10 +87,14 @@ function mixColor(canvasColor) {
     return `rgba(${selected.join(', ')})`;
 }
 
-function replaceColor(canvasColor) {
-    let selected = rgbToComponent(selectedColor)
+function replaceColor(color) {
+    let selected = rgbToComponent(color)
     
     return `rgba(${selected.join(', ')})`;
+}
+
+function erase() {
+    return `rgba(${255, 255, 255, 1})`
 }
 
 
@@ -136,5 +144,8 @@ const button = document.querySelector('button').addEventListener('click', () => 
     replaceGrid(prompt("Side length"));
 })
 
+document.querySelector('.brush').addEventListener('click', () => drawMode = 0);
+document.querySelector('.erase').addEventListener('click', () => drawMode = 1);
+document.querySelector('.random').addEventListener('click', () => drawMode = 2);
 
 grid(16);
