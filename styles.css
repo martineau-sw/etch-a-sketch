@@ -9,22 +9,26 @@ body {
     align-items: center;
     min-height: 100vh;
 }
-
-.rows {
+.grid-wrapper {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
+.grid {
+    display: grid;
+    width: 50vw;
+    height: 50vw;
+}
 
 .cell {
-    width: 2vw;
-    height: 2vw;
+    width: 1fr;
+    height: 1fr;
     background-color: grey;
 }
 
 footer {
     display: flex;
-    margin-top: auto;
     justify-content: center;
     width: 100vw;
     background-color: lightpink;
