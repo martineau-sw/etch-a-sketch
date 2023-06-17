@@ -11,10 +11,15 @@
 <body>
     <div class="content">
         <h1>Etch-a-Sketch</h1>
-        <div class="grid-wrapper">
-            <button>Resize</button>
-
-            <div class="grid"></div>
+        <div class="sketch-content">
+            <div class="ui">
+                <button>Resize</button>
+                <input type="color" class="color-picker">
+                <input type="range" class="alpha-picker" min="0" max="1" step="0.01">
+            </div>
+            <div class="grid-wrapper">
+                <div class="grid"></div>
+            </div>
         </div>
         <footer>Copyright © Seth Martineau 2023</footer>
     </div>
