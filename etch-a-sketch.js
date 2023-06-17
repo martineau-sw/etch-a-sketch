@@ -33,6 +33,7 @@ const grid = () => {
 
             cell.addEventListener('mouseenter', mouseEnterCell);
             cell.addEventListener('mouseleave', mouseExitCell);
+            cell.addEventListener('mouseup', mouseUpCell)
             row.appendChild(cell);
         }
 
@@ -52,11 +53,17 @@ const mouseEnterCell = (event) => {
 }
 
 const mouseExitCell = (event) => {
-    if(drag) return;
+    if(drag || clicked) {
+        clicked = false;
+        return;
+    }
     event.target.style['background-color'] = previousColor;
 }
 
-
+const mouseUpCell = (event) => {
+    clicked = true;
+    event.target.style['background-color'] = selectedColor;
+}
 
 
 grid();
