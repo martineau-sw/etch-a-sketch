@@ -1,3 +1,15 @@
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 100vh;
+}
+
 .rows {
     display: flex;
     justify-content: center;
@@ -7,6 +19,15 @@
 .cell {
     width: 2vw;
     height: 2vw;
-    background-color: grey
-;
+    background-color: grey;
+}
+
+footer {
+    display: flex;
+    margin-top: auto;
+    justify-content: center;
+    width: 100vw;
+    background-color: lightpink;
+    color: white;
+    padding: 4vh 0;
 }

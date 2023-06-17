@@ -1,6 +1,22 @@
+let selectedColor = 'black';
+let previousColor = 'grey';
+let drag = false;
+
+const dragStart = (event) => {
+    drag = true;
+}
+
+const dragEnd = (event) => {
+    drag = false;
+}
+
+document.body.addEventListener('mousedown', dragStart);
+document.body.addEventListener('mouseup', dragEnd);
+
 const grid = () => {
-    const root = document.createElement('div');
-    root.classList.add('rows');
+    const root = document.querySelector('.grid');
+    const rows = document.createElement('div');
+    rows.classList.add('rows');
 
     const size = 16;
     let cell;
@@ -14,15 +30,33 @@ const grid = () => {
             cell.classList.add('cell');
             cell.classList.add(`row${y}`);
             cell.classList.add(`column${x}`);
-            row.appendChild(cell);
 
-            
+            cell.addEventListener('mouseenter', mouseEnterCell);
+            cell.addEventListener('mouseleave', mouseExitCell);
+            row.appendChild(cell);
         }
 
-        root.appendChild(row);
+        rows.appendChild(row);
     }
 
-    document.body.appendChild(root);
+    root.appendChild(rows);
 }
+
+const mouseEnterCell = (event) => {
+    if(drag) {
+        event.target.style['background-color'] = selectedColor;
+        return;
+    }
+    previousColor = event.target.style['background-color'];
+    event.target.style['background-color'] = selectedColor;
+}
+
+const mouseExitCell = (event) => {
+    if(drag) return;
+    event.target.style['background-color'] = previousColor;
+}
+
+
+
 
 grid();
