@@ -1,16 +1,20 @@
+let colorInitial = randomColorHSL(100, 50, 100);
+let colorTarget = randomColorHSL(100, 50, 100);
+let colorLerp = 0;
+
 function createPixel(resolutionX, resolutionY) {
-  const INITIAL_BRUSH_COLOR = 'hsl(0deg 0% 0% / 10%)';
-  const INITIAL_PIXEL_COLOR = 'hsl(0deg 0% 100% / 100%)';
+  const INITIAL_BRUSH_COLOR = 'hsl(0 100% 50% / 100%)';
+  const INITIAL_PIXEL_COLOR = 'hsl(0 50% 100% / 100%)';
   const pixel = document.createElement('div');
   pixel.style['width'] = `${ 100 / resolutionX }%`;
   pixel.style['height'] = `${ 100 / resolutionY }%`;
   pixel.style['background-color'] = INITIAL_PIXEL_COLOR;
   pixel.addEventListener('mouseenter', event => {
     const pixel = event.target;
-    const randomColor = randomColorHSL();
     const prevColor = pixel.style['background-color'];
-    updateElementBackgroundColor(pixel, addColors(INITIAL_BRUSH_COLOR, prevColor));
+    let randomColor = updateLerp();
     updateRainbowBrushBackgroundColor(randomColor);
+    updatePixelColor(pixel, randomColor);
   });
   return pixel;
 }
@@ -31,7 +35,7 @@ function replaceGrid() {
   newGridContainer.setAttribute('id', 'grid');
 }
 
-function updateElementBackgroundColor(element, color) {
+function updatePixelColor(element, color) {
   element.style['background-color'] = color;
 }
 
@@ -42,7 +46,7 @@ function updateRainbowBrushBackgroundColor(color) {
 
 function colorStringToArray(color) {
   const prefix = color.slice(0, 3);
-  const [x, y, z, a] = color.slice(4, -1).split(' ').filter(x => !isNaN(x));
+  const [x, y, z, a] = color.slice(4, -1).replaceAll('%', '').split(' ').filter(x => !isNaN(x));
   return [prefix, x, y, z, a];
 }
 
@@ -51,12 +55,26 @@ function arrayToColorString(array) {
   if (prefix == 'rgb') {
     return `rgb(${x}% ${y}% ${z}% / ${a}%)`;
   } else if (prefix == 'hsl') {
-    return `hsl(${x}deg ${y}% ${z}% / ${a}%)`;
+    return `hsl(${x} ${y}% ${z}% / ${a}%)`;
   }
 }
 
 function randomColorHSL(saturation = 100, lightness = 50, opacity = 100) {
-  return arrayToColorString(['hsl', Math.floor(Math.random() * 360), 100, 50, 100]);
+  return arrayToColorString(['hsl', Math.floor(Math.random() * 360), saturation, lightness, opacity]);
+}
+
+function updateLerp() {
+  if (colorLerp >= 1) {
+    colorInitial = colorTarget;
+    colorTarget = randomColorHSL(100, 50, 100);
+    colorLerp = 0;
+  }
+
+  const colorInitialArray = colorStringToArray(colorInitial);
+  const colorTargetArray = colorStringToArray(colorTarget);
+  const hueIncrement = (colorTargetArray[1] - colorInitialArray[1]) * colorLerp;
+  colorLerp += 0.01;
+  return addColors(colorInitial, `hsl(${hueIncrement} 100% 50% / 100%)`);
 }
 
 
@@ -64,46 +82,30 @@ function addColors(color0, color1) {
   color0 = colorStringToArray(color0);
   color1 = colorStringToArray(color1);
 
-  if (color0.prefix !== color1.prefix) {
+  if (color0[0] !== color1[0]) {
     console.error('Colors are not the same type');
     return;
   }
 
-  const newColor = [color0.prefix];
+  const newColor = color0;
 
-  if (color0.prefix === 'rgb') {
-    newColor[1] = Math.min(Math.floor(color0.r + color1.r), 100);
-    newColor[2] = Math.min(Math.floor(color0.g + color1.g), 100);
-    newColor[3] = Math.min(Math.floor(color0.b + color1.b), 100);
-  } else if (color1.prefix === 'hsl') {
-    newColor[1] = Math.floor((color0.h + color1.h) / 2);
+  if (color0[0] === 'rgb') {
+    newColor[0] = 'rgb';
+    newColor[1] = Math.min(Math.floor(+color0[1] + +color1[1]), 100);
+    newColor[2] = Math.min(Math.floor(+color0[2] + +color1[2]), 100);
+    newColor[3] = Math.min(Math.floor(+color0[3] + +color1[3]), 100);
+  } else if (color1[0] === 'hsl') {
+    newColor[0] = 'hsl';
+    newColor[1] = +color0[1] + +color1[1];
+    console.log(color0, color1);
+    newColor[2] = Math.floor((+color0[2] + +color1[2]) / 2);
+    newColor[3] = Math.floor((+color0[3] + +color1[3]) / 2);
   }
 
-  newColor[4] = Math.min(Math.floor(color0.a + color1.a), 100);
+  newColor[4] = Math.min(Math.floor(+color0[4] + +color1[4]), 100);
 
+  console.log(newColor);
   return arrayToColorString(newColor);
-}
-
-function multiplyColorStrings(color0, color1) {
-  color0 = convertRGBAStringToArray(color0);
-  color1 = convertRGBAStringToArray(color1);
-
-  for (let i = 0; i < 3; i++) {
-    let normalizedColor0 = color0[i] / 255;
-    let normalizedColor1 = color1[i] / 255;
-    
-    color0[i] = Math.floor(normalizedColor0 * normalizedColor1 * 255);
-  }
-
-  if(color0[3] < 1) {
-    if ((color0[3] + color1[3]) > 1) {
-      color0[3] = 1;
-    } else {
-      color0[3] += color1[3];
-    };
-  }
-
-  return convertArraytoRGBAString(color0);
 }
 
 function getUserResolution() {
