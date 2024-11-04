@@ -1,0 +1,33 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2vh;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+h1 {
+  display: flex; 
+  align-items: center;
+  text-align: center;
+}
+
+#grid {
+
+  width: 40vw;
+  height: 40vw;
+  display: flex;
+  flex-flow: row wrap;
+  border: 2px solid black;
+}
+
+#pixel {
+  border: 1px solid black;
+}
