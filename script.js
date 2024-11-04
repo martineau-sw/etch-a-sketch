@@ -1,15 +1,15 @@
 function createPixel(resolutionX, resolutionY) {
-  const INITIAL_BRUSH_COLOR = 'rgba(0,0,0,0.1)';
-  const INITIAL_PIXEL_COLOR = 'rgba(255,255,255,0)';
+  const INITIAL_BRUSH_COLOR = 'hsl(0deg 0% 0% / 10%)';
+  const INITIAL_PIXEL_COLOR = 'hsl(0deg 0% 100% / 100%)';
   const pixel = document.createElement('div');
   pixel.style['width'] = `${ 100 / resolutionX }%`;
   pixel.style['height'] = `${ 100 / resolutionY }%`;
   pixel.style['background-color'] = INITIAL_PIXEL_COLOR;
   pixel.addEventListener('mouseenter', event => {
     const pixel = event.target;
-    const randomColor = getRandomRGBAString();
+    const randomColor = randomColorHSL();
     const prevColor = pixel.style['background-color'];
-    updateElementBackgroundColor(pixel, multiplyColorStrings('rgba(255, 0, 0, 0.1)', prevColor));
+    updateElementBackgroundColor(pixel, addColors(INITIAL_BRUSH_COLOR, prevColor));
     updateRainbowBrushBackgroundColor(randomColor);
   });
   return pixel;
@@ -40,48 +40,48 @@ function updateRainbowBrushBackgroundColor(color) {
   brushButton.style['background-color'] = color;
 }
 
-function convertRGBAStringToArray(rgbaString) {
-  return Array.from(rgbaString.slice(5, -1).split(','), element => +element);
+function colorStringToArray(color) {
+  const prefix = color.slice(0, 3);
+  const [x, y, z, a] = color.slice(4, -1).split(' ').filter(x => !isNaN(x));
+  return [prefix, x, y, z, a];
+}
+
+function arrayToColorString(array) {
+  const [prefix, x, y, z, a] = array;
+  if (prefix == 'rgb') {
+    return `rgb(${x}% ${y}% ${z}% / ${a}%)`;
+  } else if (prefix == 'hsl') {
+    return `hsl(${x}deg ${y}% ${z}% / ${a}%)`;
+  }
+}
+
+function randomColorHSL(saturation = 100, lightness = 50, opacity = 100) {
+  return arrayToColorString(['hsl', Math.floor(Math.random() * 360), 100, 50, 100]);
 }
 
 
-function convertArraytoRGBAString(rgbaArray) {
-  return `rgba(${rgbaArray.toString()})`
-}
+function addColors(color0, color1) {
+  color0 = colorStringToArray(color0);
+  color1 = colorStringToArray(color1);
 
-function getRandomRGBAString() {
-  return convertArraytoRGBAString([
-    Math.floor(Math.random() * 255),
-    Math.floor(Math.random() * 255),
-    Math.floor(Math.random() * 255),
-    1
-  ]);
-}
-
-
-function addColorStrings(color0, color1) {
-  color0 = convertRGBAStringToArray(color0);
-  color1 = convertRGBAStringToArray(color1);
-
-  for (let i = 0; i < 3; i++) {
-    if (color0[i] < 255) {
-      if((color0[i] + color1[i]) > 255) {
-        color0[i] = 255;
-      } else {
-        color0[i] += color1[i];
-      }
-    }
+  if (color0.prefix !== color1.prefix) {
+    console.error('Colors are not the same type');
+    return;
   }
 
-  if(color0[3] < 1) {
-    if ((color0[3] + color1[3]) > 1) {
-      color0[3] = 1;
-    } else {
-      color0[3] += color1[3];
-    };
+  const newColor = [color0.prefix];
+
+  if (color0.prefix === 'rgb') {
+    newColor[1] = Math.min(Math.floor(color0.r + color1.r), 100);
+    newColor[2] = Math.min(Math.floor(color0.g + color1.g), 100);
+    newColor[3] = Math.min(Math.floor(color0.b + color1.b), 100);
+  } else if (color1.prefix === 'hsl') {
+    newColor[1] = Math.floor((color0.h + color1.h) / 2);
   }
 
-  return convertArraytoRGBAString(color0);
+  newColor[4] = Math.min(Math.floor(color0.a + color1.a), 100);
+
+  return arrayToColorString(newColor);
 }
 
 function multiplyColorStrings(color0, color1) {
@@ -132,5 +132,4 @@ function getUserResolution() {
   populateGrid(+resolution);
 }
 
-convertRGBAStringToArray('rgb(0,0,0,1)');
 populateGrid(16);
