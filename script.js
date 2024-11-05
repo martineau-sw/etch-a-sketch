@@ -1,29 +1,59 @@
 const INITIAL_BRUSH_COLOR = 'hsl(0 0% 0%)';
 const INITIAL_PIXEL_COLOR = 'hsl(0 100% 100%)';
 
-let brushMode = 0;
-let brushAlpha = 0.5;
-let colorInitial = randomColorHSL(100, 50, 100);
-let colorTarget = colorInitial;
-let colorLerp = 0;
+const BrushModes = {
+  Solid: 0,
+  Random: 1,
+  SmoothRandom: 2
+}
+
+const BrushSettings = {
+  Active: false,
+  Erase: false,
+  Mode: BrushModes.Solid,
+  Alpha: 1,
+  Color: INITIAL_BRUSH_COLOR,
+  ColorLerpInitial: randomHsl(),
+  ColorLerpTarget: randomHsl(),
+  ColorLerpValue: 0
+}
 
 function createPixel(resolutionX, resolutionY) {
   const pixel = document.createElement('div');
   pixel.style['width'] = `${ 100 / resolutionX }%`;
   pixel.style['height'] = `${ 100 / resolutionY }%`;
   pixel.style['background-color'] = INITIAL_PIXEL_COLOR;
-  pixel.addEventListener('mouseenter', event => {
-    const pixel = event.target;
-    const prevColor = convertRGBtoHSL(pixel.style['background-color']);
-    let randomColor = updateLerp();
-    if (brushMode === 0) {
-      updatePixelColor(pixel, addColors(prevColor, INITIAL_BRUSH_COLOR));
-    } else if (brushMode === 1) {
-      updatePixelColor(pixel, addColors(prevColor, randomColor));
-    }
-    updateRainbowBrushColor(randomColor);
+  pixel.addEventListener('mouseover', event => {
+      if (!BrushSettings.Active) return;
+      paintPixel(event.target, BrushSettings);
   });
+
+  pixel.addEventListener('mousedown', event => {
+    BrushSettings.Active = true;
+    if (event.button === 2) BrushSettings.Erase = true;
+  })
+
+  pixel.addEventListener('mouseup', event => {
+    BrushSettings.Active = false;
+    BrushSettings.Erase = false;
+  })
+
+  pixel.addEventListener('click', event => {
+    paintPixel(event.target, BrushSettings);
+  })
   return pixel;
+}
+
+function paintPixel(pixel, brush) {
+  const pixelColor = convertRgbToHsl(pixel.style['background-color']);
+  if(brush.Erase) {
+    updatePixelColor(pixel, INITIAL_PIXEL_COLOR);
+  } else {
+    const randomColor = brush.Mode === brush.Random ? randomHsl() : updateLerp(brush);
+    brush.Color = brush.Mode === brush.Solid ? brush.Color : randomColor;
+    updatePixelColor(pixel, addColors(pixelColor, brush));
+    updateRainbowBrushColor(randomColor);
+  }
 }
 
 function populateGrid(resolution) {
@@ -66,38 +96,37 @@ function hslArrayToString(array) {
   return `hsl(${array[0]} ${array[1]}% ${array[2]}% / ${array[3]}%)`;
 }
 
-function randomColorHSL(saturation = 100, lightness = 50, opacity = 100) {
-  return hslArrayToString(['hsl', Math.floor(Math.random() * 360), saturation, lightness, opacity]);
+function randomHsl(saturation = 100, lightness = 50) {
+  return hslArrayToString(['hsl', Math.floor(Math.random() * 360), saturation, lightness]);
 }
 
 function setBrushMode(mode) {
-  brushMode = mode;
+  BrushSettings.Mode = mode;
 }
 
-function updateLerp() {
-  if (colorLerp >= 1) {
-    colorInitial = colorTarget;
-    colorTarget = randomColorHSL(100, 50, 10);
-    colorLerp = 0;
+function updateLerp(brush) {
+  if (brush.ColorLerpValue >= 1) {
+    brush.ColorLerpInitial = brush.ColorLerpTarget;
+    brush.ColorLerpTarget = randomHsl();
+    brush.ColorLerpValue = 0;
   }
 
-  const colorInitialArray = hslStringToArray(colorInitial);
-  const colorTargetArray = hslStringToArray(colorTarget);
-  const hueIncrement = (colorTargetArray[0] - colorInitialArray[0]) * colorLerp;
-  colorLerp += 0.01;
+  const colorInitialArray = hslStringToArray(brush.ColorLerpInitial);
+  const colorTargetArray = hslStringToArray(brush.ColorLerpTarget);
+  const hueIncrement = (colorTargetArray[0] - colorInitialArray[0]) * brush.ColorLerpValue;
+  brush.ColorLerpValue += 0.01;
   const newHue = +colorInitialArray[0] + +hueIncrement
   return `hsl(${(newHue) % 360} 100% 50%)`;
 }
 
 
-function addColors(pixelColorString, brushColorString) {
-
+function addColors(pixelColorString, brush) {
   const pixelColorArray = hslStringToArray(pixelColorString);
-  const brushColorArray = hslStringToArray(brushColorString);
+  const brushColorArray = hslStringToArray(brush.Color);
   const newColorArray = [
-    ((pixelColorArray[0] - (pixelColorArray[0] - brushColorArray[0]) * brushAlpha)) % 360,
-    ((pixelColorArray[1] - (pixelColorArray[1] - brushColorArray[1]) * brushAlpha)),
-    ((pixelColorArray[2] - (pixelColorArray[2] - brushColorArray[2]) * brushAlpha)),
+    ((pixelColorArray[0] - (pixelColorArray[0] - brushColorArray[0]) * brush.Alpha)) % 360,
+    ((pixelColorArray[1] - (pixelColorArray[1] - brushColorArray[1]) * brush.Alpha)),
+    ((pixelColorArray[2] - (pixelColorArray[2] - brushColorArray[2]) * brush.Alpha)),
     100
   ]
 
@@ -105,7 +134,7 @@ function addColors(pixelColorString, brushColorString) {
 }
 
 function getUserResolution() {
-  const resolution = prompt('Enter Resolution [8, 100]');
+  const resolution = prompt('Enter Resolution [8, 64]');
   const CANCELED_INPUT = '';
   if (Number.isNaN(resolution)) {
     if (resolution === CANCELED_INPUT) {
@@ -121,8 +150,8 @@ function getUserResolution() {
     return;
   }
 
-  if (+resolution < 8 || +resolution > 100) {
-    alert("Resolution must be in range [8, 100]");
+  if (+resolution < 8 || +resolution > 64) {
+    alert("Resolution must be in range [8, 64]");
     return;
   }
 
@@ -130,7 +159,7 @@ function getUserResolution() {
   populateGrid(+resolution);
 }
 
-function formatLegacyRGB(color) {
+function formatRgb(color) {
   if (color.slice(0, 4) === 'rgba') {
     return color.slice(5, -1).split(', ');
   }
@@ -138,8 +167,8 @@ function formatLegacyRGB(color) {
   return color.slice(4, -1).split(', ');
 }
 
-function convertRGBtoHSL(color) {
-  color = formatLegacyRGB(color);
+function convertRgbToHsl(color) {
+  color = formatRgb(color);
   const red = +color[0] / 255;
   const green = +color[1] / 255;
   const blue = +color[2] / 255;
@@ -170,5 +199,5 @@ function convertRGBtoHSL(color) {
 
 
 updateSolidBrushColor();
-updateRainbowBrushColor(colorInitial);
+updateRainbowBrushColor(BrushSettings.ColorLerpInitial);
 populateGrid(16);
