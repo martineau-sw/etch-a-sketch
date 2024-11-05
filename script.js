@@ -49,7 +49,7 @@ function updatePixelColor(element, color) {
 function updateRainbowBrushColor(color) {
   const rainbowBrush = document.querySelector('#rainbow');
   color = hslStringToArray(color);
-  rainbowBrush.style['background-color'] = `hsl(${color[1]} 100% 50%)`;
+  rainbowBrush.style['background-color'] = `hsl(${color[0]} 100% 50%)`;
 }
 
 function updateSolidBrushColor() {
@@ -83,10 +83,10 @@ function updateLerp() {
 
   const colorInitialArray = hslStringToArray(colorInitial);
   const colorTargetArray = hslStringToArray(colorTarget);
-  const hueIncrement = (colorTargetArray[1] - colorInitialArray[1]) * colorLerp;
+  const hueIncrement = (colorTargetArray[0] - colorInitialArray[0]) * colorLerp;
   colorLerp += 0.01;
-  const newHue = +colorInitialArray[1] + +hueIncrement
-  return `hsl(${(newHue) % 360} 100% 50% / 100%)`;
+  const newHue = +colorInitialArray[0] + +hueIncrement
+  return `hsl(${(newHue) % 360} 100% 50%)`;
 }
 
 
