@@ -37,12 +37,20 @@ h1 {
 
 #ui {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 5vw;
 }
 
 button {
   border: 3px solid black;
+}
+
+.brush {
+  width: 5vh;
+  height: 5vh;
+  border-radius: 50%;
+
+  
 }
 
 #resolution {
@@ -51,8 +59,3 @@ button {
   padding: 1vh 2vw;
 }
 
-.brush {
-  width: 5vh;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-}
