@@ -1,20 +1,27 @@
+const INITIAL_BRUSH_COLOR = 'hsl(0 0% 0%)';
+const INITIAL_PIXEL_COLOR = 'hsl(0 100% 100%)';
+
+let brushMode = 0;
+let brushAlpha = 0.5;
 let colorInitial = randomColorHSL(100, 50, 100);
-let colorTarget = randomColorHSL(100, 50, 100);
+let colorTarget = colorInitial;
 let colorLerp = 0;
 
 function createPixel(resolutionX, resolutionY) {
-  const INITIAL_BRUSH_COLOR = 'hsl(0 100% 50% / 100%)';
-  const INITIAL_PIXEL_COLOR = 'hsl(0 50% 100% / 100%)';
   const pixel = document.createElement('div');
   pixel.style['width'] = `${ 100 / resolutionX }%`;
   pixel.style['height'] = `${ 100 / resolutionY }%`;
   pixel.style['background-color'] = INITIAL_PIXEL_COLOR;
   pixel.addEventListener('mouseenter', event => {
     const pixel = event.target;
-    const prevColor = pixel.style['background-color'];
+    const prevColor = convertRGBtoHSL(pixel.style['background-color']);
     let randomColor = updateLerp();
-    updateRainbowBrushBackgroundColor(randomColor);
-    updatePixelColor(pixel, randomColor);
+    if (brushMode === 0) {
+      updatePixelColor(pixel, addColors(prevColor, INITIAL_BRUSH_COLOR));
+    } else if (brushMode === 1) {
+      updatePixelColor(pixel, addColors(prevColor, randomColor));
+    }
+    updateRainbowBrushColor(randomColor);
   });
   return pixel;
 }
@@ -39,73 +46,62 @@ function updatePixelColor(element, color) {
   element.style['background-color'] = color;
 }
 
-function updateRainbowBrushBackgroundColor(color) {
-  const brushButton = document.querySelector('#rainbow');
-  brushButton.style['background-color'] = color;
+function updateRainbowBrushColor(color) {
+  const rainbowBrush = document.querySelector('#rainbow');
+  color = hslStringToArray(color);
+  rainbowBrush.style['background-color'] = `hsl(${color[1]} 100% 50%)`;
 }
 
-function colorStringToArray(color) {
-  const prefix = color.slice(0, 3);
-  const [x, y, z, a] = color.slice(4, -1).replaceAll('%', '').split(' ').filter(x => !isNaN(x));
-  return [prefix, x, y, z, a];
+function updateSolidBrushColor() {
+  const solidBrush = document.querySelector('#black');
+  solidBrush.style['background-color'] = INITIAL_BRUSH_COLOR;
 }
 
-function arrayToColorString(array) {
-  const [prefix, x, y, z, a] = array;
-  if (prefix == 'rgb') {
-    return `rgb(${x}% ${y}% ${z}% / ${a}%)`;
-  } else if (prefix == 'hsl') {
-    return `hsl(${x} ${y}% ${z}% / ${a}%)`;
-  }
+function hslStringToArray(hslString) {
+  const [h, s, l, a] = hslString.slice(4, -1).replaceAll('%', '').split(' ').filter(x => !isNaN(x));
+  return [+h, +s, +l, +a];
+}
+
+function hslArrayToString(array) {
+  return `hsl(${array[0]} ${array[1]}% ${array[2]}% / ${array[3]}%)`;
 }
 
 function randomColorHSL(saturation = 100, lightness = 50, opacity = 100) {
-  return arrayToColorString(['hsl', Math.floor(Math.random() * 360), saturation, lightness, opacity]);
+  return hslArrayToString(['hsl', Math.floor(Math.random() * 360), saturation, lightness, opacity]);
+}
+
+function setBrushMode(mode) {
+  brushMode = mode;
 }
 
 function updateLerp() {
   if (colorLerp >= 1) {
     colorInitial = colorTarget;
-    colorTarget = randomColorHSL(100, 50, 100);
+    colorTarget = randomColorHSL(100, 50, 10);
     colorLerp = 0;
   }
 
-  const colorInitialArray = colorStringToArray(colorInitial);
-  const colorTargetArray = colorStringToArray(colorTarget);
+  const colorInitialArray = hslStringToArray(colorInitial);
+  const colorTargetArray = hslStringToArray(colorTarget);
   const hueIncrement = (colorTargetArray[1] - colorInitialArray[1]) * colorLerp;
   colorLerp += 0.01;
-  return addColors(colorInitial, `hsl(${hueIncrement} 100% 50% / 100%)`);
+  const newHue = +colorInitialArray[1] + +hueIncrement
+  return `hsl(${(newHue) % 360} 100% 50% / 100%)`;
 }
 
 
-function addColors(color0, color1) {
-  color0 = colorStringToArray(color0);
-  color1 = colorStringToArray(color1);
+function addColors(pixelColorString, brushColorString) {
 
-  if (color0[0] !== color1[0]) {
-    console.error('Colors are not the same type');
-    return;
-  }
+  const pixelColorArray = hslStringToArray(pixelColorString);
+  const brushColorArray = hslStringToArray(brushColorString);
+  const newColorArray = [
+    ((pixelColorArray[0] - (pixelColorArray[0] - brushColorArray[0]) * brushAlpha)) % 360,
+    ((pixelColorArray[1] - (pixelColorArray[1] - brushColorArray[1]) * brushAlpha)),
+    ((pixelColorArray[2] - (pixelColorArray[2] - brushColorArray[2]) * brushAlpha)),
+    100
+  ]
 
-  const newColor = color0;
-
-  if (color0[0] === 'rgb') {
-    newColor[0] = 'rgb';
-    newColor[1] = Math.min(Math.floor(+color0[1] + +color1[1]), 100);
-    newColor[2] = Math.min(Math.floor(+color0[2] + +color1[2]), 100);
-    newColor[3] = Math.min(Math.floor(+color0[3] + +color1[3]), 100);
-  } else if (color1[0] === 'hsl') {
-    newColor[0] = 'hsl';
-    newColor[1] = +color0[1] + +color1[1];
-    console.log(color0, color1);
-    newColor[2] = Math.floor((+color0[2] + +color1[2]) / 2);
-    newColor[3] = Math.floor((+color0[3] + +color1[3]) / 2);
-  }
-
-  newColor[4] = Math.min(Math.floor(+color0[4] + +color1[4]), 100);
-
-  console.log(newColor);
-  return arrayToColorString(newColor);
+  return hslArrayToString(newColorArray);
 }
 
 function getUserResolution() {
@@ -134,4 +130,45 @@ function getUserResolution() {
   populateGrid(+resolution);
 }
 
+function formatLegacyRGB(color) {
+  if (color.slice(0, 4) === 'rgba') {
+    return color.slice(5, -1).split(', ');
+  }
+
+  return color.slice(4, -1).split(', ');
+}
+
+function convertRGBtoHSL(color) {
+  color = formatLegacyRGB(color);
+  const red = +color[0] / 255;
+  const green = +color[1] / 255;
+  const blue = +color[2] / 255;
+  const alpha = color.length === 3 ? 1 : +color[3];
+  
+  const rgbMin = Math.min(red, green, blue);
+  const rgbMax = Math.max(red, green, blue);
+  const rgbDelta = rgbMax - rgbMin;
+  let hue = 0;
+  if (rgbDelta !== 0) {
+    switch (rgbMax) {
+      case red: hue = ((green - blue) / rgbDelta) % 6; break;
+      case green: hue = (blue - red) / rgbDelta + 2; break;
+      case blue: hue = (red - green) / rgbDelta + 4; break;
+    }
+    hue = Math.round(hue * 60);
+    if (hue < 0) {
+      hue += 360;
+    }
+  }
+
+  const lightness = (rgbMax + rgbMin) / 2;
+  const saturation = rgbDelta === 0 ? 0 : rgbDelta / (1 - Math.abs(2 * lightness - 1));
+  const colorString = hslArrayToString([hue, saturation * 100, lightness * 100, alpha * 100]);
+
+  return colorString;
+}
+
+
+updateSolidBrushColor();
+updateRainbowBrushColor(colorInitial);
 populateGrid(16);
